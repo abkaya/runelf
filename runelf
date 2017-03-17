@@ -1,0 +1,66 @@
+#!/bin/bash
+# Written to run ELF (executable linkable format) files with "arm-none-eabi-gdb"
+# without having to manually set the target to localhost:4242
+# then load and continue the program with the debugger.
+
+# There is only 1 parameter: The .elf executable file.
+
+# A convenient way of doing this would be to write a bash script to start a screen (if it doesn't already exist)
+# and feed that screen with the settings for the debugger.
+
+# Running the elfStart command again will check whether or not a screen is already running. If so, kill it and restart it.
+
+NARGS=$#
+FILE=$1
+
+function ExecuteELF () {
+  if (( ${NARGS} != 1 )); then
+    echo "${NARGS} Illegal number of parameters"
+  else 
+    getFileName 
+  fi
+}
+
+function getFileName () {
+  if [[ -e ${FILE} ]]; then
+    runScreen
+  else
+    echo "${FILE} does not exist in this directory."
+  fi
+}
+
+function runScreen () {
+  #If the screen already exists, kill it, restart it and stufff it with the commands you want
+  if echo "$(screen -ls)" | grep -q ${FILE}; then
+    #kill the program running in the debugger first!
+    screen -S ${FILE} -p 0 -X stuff $'\003'
+    screen -X -S ${FILE} kill
+  fi
+  sleep .2
+  screen -S ${FILE} -d -m arm-none-eabi-gdb ${FILE}
+  sleep .2
+  screen -S ${FILE} -p 0 -X stuff "target extended-remote localhost:4242$(printf \\r)"
+  sleep .5
+  screen -S ${FILE} -p 0 -X stuff "load$(printf \\r)"
+  sleep 1
+  screen -S ${FILE} -p 0 -X stuff "continue$(printf \\r)"
+}
+
+# Start script here
+ExecuteELF
+
+
+#--------------
+# No argument support is left out for now. 
+# The idea was to allow for runelf to work without parameters  in
+#  following cases :
+#    1. there is 1 .elf file in the working directory
+#    2. there are multiple .elf files, but following regex matches, and its corresponding .elf file  also exists
+#---------------
+#https://regex101.com/r/lE7RJm/1
+#regex = "\/([-|_|a-zA-Z0-9]*)\/Debug"
+#dirC = "$(pwd)"
+#Bash's regex match operator =~ does NOT mean "not equal to"
+#------------------------------------------------------------
+
+
