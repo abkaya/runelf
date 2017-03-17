@@ -36,14 +36,12 @@ function runScreen () {
     screen -S ${FILE} -p 0 -X stuff $'\003'
     screen -X -S ${FILE} kill
   fi
-  sleep .2
+  #pkill -f plotSerial.py
   screen -S ${FILE} -d -m arm-none-eabi-gdb ${FILE}
-  sleep .2
   screen -S ${FILE} -p 0 -X stuff "target extended-remote localhost:4242$(printf \\r)"
-  sleep .5
   screen -S ${FILE} -p 0 -X stuff "load$(printf \\r)"
-  sleep 1
   screen -S ${FILE} -p 0 -X stuff "continue$(printf \\r)"
+  #plotSerial.py --port /dev/ttyACM0 > /dev/null 2>&1 & disown
 }
 
 # Start script here
